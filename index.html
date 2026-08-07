@@ -134,6 +134,10 @@ table.listado td.descripcion .sin-dato { color: #d1d5db; }
 </main>
 
 <script>
+function esc(s) {
+  return (s == null ? '' : String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
 async function cargar() {
   const app = document.getElementById('app');
   let data;
@@ -305,6 +309,7 @@ function render(data) {
     <div class="tabs">
       <button class="tab-btn active" data-tab="metricas">📊 Métricas generales</button>
       <button class="tab-btn" data-tab="tipificacion">🔧 Tipificación y listado</button>
+      <button class="tab-btn" data-tab="implementacion">🚀 Implementación</button>
     </div>
 
     <div class="tab-panel active" id="tab-metricas">
@@ -391,6 +396,10 @@ function render(data) {
         </div>
       </div>
     </div>
+
+    <div class="tab-panel" id="tab-implementacion">
+      <div id="adoMount"><div class="empty">Cargando…</div></div>
+    </div>
   `;
 
   document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -458,6 +467,235 @@ function render(data) {
   });
 
   actualizarIndicadoresSort();
+
+  initAdoTab();
+}
+
+// ─────────────────────────────────────────────────────────
+// Pestaña "Implementación" — Azure DevOps
+// ─────────────────────────────────────────────────────────
+const ADO_CFG_KEY = 'helpdeskAdoCfg';
+let adoCfg = {};
+let adoInitDone = false;
+
+function loadAdoCfg() {
+  try { adoCfg = JSON.parse(localStorage.getItem(ADO_CFG_KEY) || '{}'); } catch (e) { adoCfg = {}; }
+}
+
+function saveAdoCfg() {
+  const org = document.getElementById('adoOrg').value.trim();
+  const project = document.getElementById('adoProject').value.trim();
+  const pat = document.getElementById('adoPat').value.trim();
+  const team = document.getElementById('adoTeam').value.trim();
+  if (!org || !project || !pat) { alert('Organization, Project y PAT son obligatorios.'); return; }
+  adoCfg = { org, project, team, maxItems: parseInt(document.getElementById('adoMax').value) || 500 };
+  localStorage.setItem(ADO_CFG_KEY, JSON.stringify(adoCfg));
+  // El PAT se guarda aparte, en sessionStorage (no persiste entre sesiones del navegador,
+  // así el token queda menos tiempo expuesto en disco que si fuera localStorage).
+  sessionStorage.setItem('helpdeskAdoPat', pat);
+  cargarAdo();
+}
+
+function adoAuthHdr() {
+  const pat = sessionStorage.getItem('helpdeskAdoPat') || '';
+  return { 'Authorization': 'Basic ' + btoa(':' + pat), 'Content-Type': 'application/json' };
+}
+function adoBase() { return `https://dev.azure.com/${encodeURIComponent(adoCfg.org)}/${encodeURIComponent(adoCfg.project)}`; }
+
+async function adoApiGet(url) {
+  const r = await fetch(url, { headers: adoAuthHdr() });
+  if (!r.ok) throw new Error(`GET ${url} → ${r.status}: ${(await r.text()).slice(0, 300)}`);
+  return r.json();
+}
+
+function adoParseDate(str) {
+  if (!str) return null;
+  const m = String(str).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? new Date(+m[1], +m[2] - 1, +m[3], 12, 0, 0) : new Date(str);
+}
+
+async function adoFetchTeamAreaPaths(teamName) {
+  if (!teamName) return [];
+  try {
+    const d = await adoApiGet(`${adoBase()}/${encodeURIComponent(teamName)}/_apis/work/teamsettings/teamfieldvalues?api-version=7.1`);
+    return (d.values || []).map(v => ({ value: v.value, includeChildren: v.includeChildren }));
+  } catch (e) { console.warn('No se pudieron obtener area paths del equipo:', e); return []; }
+}
+
+function adoBuildAreaFilter(areaPaths) {
+  if (!areaPaths.length) return '';
+  const clauses = areaPaths.map(ap => ap.includeChildren
+    ? `[System.AreaPath] UNDER '${ap.value.replace(/'/g, "''")}'`
+    : `[System.AreaPath] = '${ap.value.replace(/'/g, "''")}'`);
+  return `AND (${clauses.join(' OR ')})`;
+}
+
+const ADO_WI_FIELDS = ['System.Id', 'System.Title', 'System.WorkItemType', 'System.State', 'System.CreatedDate'].join(',');
+
+async function adoFetchItemsByIds(ids) {
+  const raw = [];
+  for (let i = 0; i < ids.length; i += 200) {
+    const chunk = ids.slice(i, i + 200);
+    const d = await adoApiGet(`${adoBase()}/_apis/wit/workitems?ids=${chunk.join(',')}&fields=${encodeURIComponent(ADO_WI_FIELDS)}&api-version=7.1`);
+    raw.push(...(d.value || []));
+  }
+  return raw;
+}
+
+async function adoFetchWorkItems() {
+  const areaPaths = await adoFetchTeamAreaPaths(adoCfg.team);
+  const areaFilter = adoBuildAreaFilter(areaPaths);
+  const maxItems = adoCfg.maxItems || 500;
+  const wiql = { query: `SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = @project AND [System.State] NOT IN ('Removed','Cut','Cancelled','Rejected','Withdrawn') ${areaFilter} ORDER BY [System.CreatedDate] DESC` };
+  const r = await fetch(`${adoBase()}/_apis/wit/wiql?$top=${maxItems}&api-version=7.1`, {
+    method: 'POST', headers: adoAuthHdr(), body: JSON.stringify(wiql)
+  });
+  if (!r.ok) throw new Error(`WIQL falló: ${r.status} ${await r.text()}`);
+  const { workItems: wis } = await r.json();
+  if (!wis?.length) return [];
+  return adoFetchItemsByIds(wis.map(w => w.id));
+}
+
+const ADO_MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+function adoConfigForm() {
+  return `
+    <div class="panel">
+      <div class="panel-head">⚙️ Configurar Azure DevOps</div>
+      <div class="panel-body">
+        <p class="foot-note" style="margin-top:0 0 14px">Los datos se guardan localmente en tu navegador (el PAT en sessionStorage, se borra al cerrar la pestaña del navegador). Nunca se suben a GitHub ni pasan por ningún servidor propio — solo se usan para llamar directo a la API de Azure DevOps.</p>
+        <div class="filter-bar" style="flex-direction:column; align-items:stretch; gap:12px;">
+          <div>
+            <label style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px;">Organization</label>
+            <input type="text" id="adoOrg" placeholder="accusystechnology" value="${esc(adoCfg.org || '')}" style="width:100%;padding:8px 12px;border:1px solid #e2e4e9;border-radius:8px;font-size:12px;font-family:inherit;">
+          </div>
+          <div>
+            <label style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px;">Project</label>
+            <input type="text" id="adoProject" placeholder="probatch" value="${esc(adoCfg.project || '')}" style="width:100%;padding:8px 12px;border:1px solid #e2e4e9;border-radius:8px;font-size:12px;font-family:inherit;">
+          </div>
+          <div>
+            <label style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px;">Team (opcional — nombre exacto del equipo en ADO)</label>
+            <input type="text" id="adoTeam" placeholder="ej: Implementación Team (vacío = todo el proyecto)" value="${esc(adoCfg.team || '')}" style="width:100%;padding:8px 12px;border:1px solid #e2e4e9;border-radius:8px;font-size:12px;font-family:inherit;">
+          </div>
+          <div>
+            <label style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px;">Personal Access Token (PAT)</label>
+            <input type="password" id="adoPat" placeholder="Permisos necesarios: Work Items (Read)" style="width:100%;padding:8px 12px;border:1px solid #e2e4e9;border-radius:8px;font-size:12px;font-family:inherit;">
+          </div>
+          <div>
+            <label style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px;">Máx. work items</label>
+            <input type="number" id="adoMax" value="${adoCfg.maxItems || 500}" style="width:100%;padding:8px 12px;border:1px solid #e2e4e9;border-radius:8px;font-size:12px;font-family:inherit;">
+          </div>
+          <button class="btn" style="background:#123a82;color:#fff;border-color:#123a82;" onclick="saveAdoCfg()">Guardar y conectar</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function initAdoTab() {
+  loadAdoCfg();
+  const mount = document.getElementById('adoMount');
+  if (!mount) return;
+  if (adoCfg.org && adoCfg.project && sessionStorage.getItem('helpdeskAdoPat')) {
+    cargarAdo();
+  } else {
+    mount.innerHTML = adoConfigForm();
+  }
+}
+
+async function cargarAdo() {
+  const mount = document.getElementById('adoMount');
+  mount.innerHTML = '<div class="empty">Consultando Azure DevOps…</div>';
+  let items;
+  try {
+    items = await adoFetchWorkItems();
+  } catch (e) {
+    mount.innerHTML = `<div class="panel"><div class="panel-body">
+      <div class="empty"><b>No pude conectar con Azure DevOps</b><br><br>${esc(e.message)}</div>
+      <button class="btn" onclick="reconfigurarAdo()">⚙️ Revisar configuración</button>
+    </div></div>`;
+    return;
+  }
+  renderAdo(items);
+}
+
+function reconfigurarAdo() {
+  sessionStorage.removeItem('helpdeskAdoPat');
+  document.getElementById('adoMount').innerHTML = adoConfigForm();
+}
+
+function renderAdo(items) {
+  const mount = document.getElementById('adoMount');
+  const ahora = new Date();
+  const mesActualKey = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}`;
+
+  const porMes = {};
+  const porTipo = {};
+  for (const it of items) {
+    const f = it.fields || {};
+    const fecha = adoParseDate(f['System.CreatedDate']);
+    const tipo = f['System.WorkItemType'] || 'Sin tipo';
+    porTipo[tipo] = (porTipo[tipo] || 0) + 1;
+    if (fecha) {
+      const key = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
+      porMes[key] = (porMes[key] || 0) + 1;
+    }
+  }
+
+  const mesesOrdenados = Object.keys(porMes).sort();
+  const maxMes = Math.max(1, ...mesesOrdenados.map(m => porMes[m]));
+  const barsMonth = mesesOrdenados.map(m => {
+    const [y, mm] = m.split('-');
+    const h = (porMes[m] / maxMes * 100).toFixed(1);
+    return `<div class="col">
+      <div class="val">${porMes[m]}</div>
+      <div class="stack" style="height:${h}%"><div class="seg" style="height:100%;background:linear-gradient(180deg,#2563eb,#60a5fa)"></div></div>
+      <div class="mlabel">${ADO_MESES_ES[parseInt(mm) - 1].slice(0,3)}<br>${y}</div>
+    </div>`;
+  }).join('');
+
+  const tipoChips = Object.entries(porTipo).sort((a, b) => b[1] - a[1])
+    .map(([tipo, n]) => `<span class="chip">${esc(tipo)}: ${n}</span>`).join('');
+
+  mount.innerHTML = `
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="icon">🚀</div>
+        <div class="label">Total work items</div>
+        <div class="value">${items.length}</div>
+        <div class="foot">en ${adoCfg.team ? `equipo "${esc(adoCfg.team)}"` : 'todo el proyecto'}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="icon">📅</div>
+        <div class="label">${ADO_MESES_ES[ahora.getMonth()]} ${ahora.getFullYear()}</div>
+        <div class="value accent">${porMes[mesActualKey] || 0}</div>
+        <div class="foot">creados este mes</div>
+      </div>
+      <div class="kpi-card">
+        <div class="icon">🗂️</div>
+        <div class="label">Tipo más frecuente</div>
+        <div class="value" style="font-size:18px">${esc(Object.entries(porTipo).sort((a,b)=>b[1]-a[1])[0]?.[0] || '—')}</div>
+        <div class="foot">${Object.entries(porTipo).sort((a,b)=>b[1]-a[1])[0]?.[1] || 0} items</div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-bottom:16px">
+      <div class="panel-head">📈 Work items creados por mes</div>
+      <div class="panel-body">
+        <div class="bars-month">${barsMonth || '<div class="empty">Sin datos</div>'}</div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-bottom:16px">
+      <div class="panel-head">🗂️ Distribución por tipo</div>
+      <div class="panel-body"><div class="chip-row">${tipoChips || '<div class="empty">Sin datos</div>'}</div></div>
+    </div>
+
+    <div class="filter-bar">
+      <button class="btn" onclick="cargarAdo()">↻ Recargar</button>
+      <button class="btn" onclick="reconfigurarAdo()">⚙️ Reconfigurar</button>
+      <span class="hint">Organization: ${esc(adoCfg.org)} · Project: ${esc(adoCfg.project)}${adoCfg.team ? ' · Team: ' + esc(adoCfg.team) : ''}</span>
+    </div>
+  `;
 }
 
 cargar();
