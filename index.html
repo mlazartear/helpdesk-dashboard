@@ -530,7 +530,8 @@ function adoBuildAreaFilter(areaPaths) {
   return `AND (${clauses.join(' OR ')})`;
 }
 
-const ADO_WI_FIELDS = ['System.Id', 'System.Title', 'System.WorkItemType', 'System.State', 'System.CreatedDate'].join(',');
+const ADO_CAMPO_CLIENTE = 'Custom.Cliente';
+const ADO_WI_FIELDS = ['System.Id', 'System.Title', 'System.WorkItemType', 'System.State', 'System.CreatedDate', ADO_CAMPO_CLIENTE].join(',');
 
 async function adoFetchItemsByIds(ids) {
   const raw = [];
@@ -632,11 +633,14 @@ function renderAdo(items) {
 
   const porMes = {};
   const porEstado = {};
+  const porCliente = {};
   for (const it of items) {
     const f = it.fields || {};
     const fecha = adoParseDate(f['System.CreatedDate']);
     const estado = f['System.State'] || 'Sin estado';
+    const cliente = (f[ADO_CAMPO_CLIENTE] || '').toString().trim() || 'Sin cliente';
     porEstado[estado] = (porEstado[estado] || 0) + 1;
+    porCliente[cliente] = (porCliente[cliente] || 0) + 1;
     if (fecha) {
       const key = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
       porMes[key] = (porMes[key] || 0) + 1;
@@ -658,6 +662,16 @@ function renderAdo(items) {
   const estadoChips = Object.entries(porEstado).sort((a, b) => b[1] - a[1])
     .map(([estado, n]) => `<span class="chip">${esc(estado)}: ${n}</span>`).join('');
   const estadoTop = Object.entries(porEstado).sort((a, b) => b[1] - a[1])[0];
+
+  const clientesOrdenados = Object.entries(porCliente).sort((a, b) => b[1] - a[1]);
+  const maxCliente = Math.max(1, ...clientesOrdenados.map(([, n]) => n));
+  const clienteHbars = clientesOrdenados.map(([cliente, n]) => `
+    <div class="hbar-row">
+      <div class="name" title="${esc(cliente)}">${esc(cliente)}</div>
+      <div class="hbar-track"><div class="hbar-fill" style="width:${(n/maxCliente*100).toFixed(1)}%"></div></div>
+      <div class="num">${n}</div>
+    </div>`).join('');
+  const clienteVacio = clientesOrdenados.length === 1 && clientesOrdenados[0][0] === 'Sin cliente';
 
   mount.innerHTML = `
     <div class="kpi-row">
@@ -688,9 +702,18 @@ function renderAdo(items) {
       </div>
     </div>
 
-    <div class="panel" style="margin-bottom:16px">
-      <div class="panel-head">🚦 Distribución por estado</div>
-      <div class="panel-body"><div class="chip-row">${estadoChips || '<div class="empty">Sin datos</div>'}</div></div>
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-head">🏢 Casos por cliente</div>
+        <div class="panel-body">
+          ${clienteHbars || '<div class="empty">Sin datos</div>'}
+          ${clienteVacio ? `<div class="foot-note">No se encontró valor en el campo "${esc(ADO_CAMPO_CLIENTE)}" para ningún item. Puede que el nombre técnico del campo en tu proceso de ADO sea otro (no "${esc(ADO_CAMPO_CLIENTE)}") — avisame y lo ajusto.</div>` : ''}
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">🚦 Distribución por estado</div>
+        <div class="panel-body"><div class="chip-row">${estadoChips || '<div class="empty">Sin datos</div>'}</div></div>
+      </div>
     </div>
 
     <div class="filter-bar">
