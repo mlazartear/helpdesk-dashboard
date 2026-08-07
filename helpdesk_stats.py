@@ -12,12 +12,11 @@ Flujo:
        python3 helpdesk_stats.py
        python3 helpdesk_stats.py --archivo /ruta/al/archivo.xlsx
 
-  3. Abrir helpdesk-dashboard.html (sirviendo la carpeta con un server local):
+  3. Ver el resultado sirviendo esta carpeta con un server local:
 
-       python3 -m http.server 8080 --directory ~/Cloude_1
-       → http://localhost:8080/helpdesk-dashboard.html
-
-El dashboard lee helpdesk_data.json (mismo directorio) vía fetch.
+       python3 -m http.server 8090
+       → http://localhost:8090/              (público, sin descripciones)
+       → http://localhost:8090/index.local.html  (privado, con descripciones)
 
 Cliente "Accusys" se excluye de las estadísticas por pedido explícito
 (son tickets internos, no de clientes) — ver flag --incluir-accusys.
@@ -29,10 +28,16 @@ Exportación/Importación, Middleware, Configuración, Comandos, Bitácora,
 Consulta general, Otros). Es una heurística de texto, no un campo real del
 Helpdesk — revisar y ajustar las keywords si una categoría queda mal armada.
 
-Descripciones: el Excel exportado no trae el primer mensaje/descripción del
-ticket (solo título). helpdesk_descripciones.json es un complemento manual
+Descripciones (DATOS SENSIBLES — nombres de personas, IPs internas, etc.):
+el Excel exportado no trae el primer mensaje/descripción del ticket (solo
+título). helpdesk_descripciones.json es un complemento manual
 {"id_ticket": "descripción"} armado a mano abriendo cada ticket en el
-Helpdesk — opcional, si falta un ID simplemente queda sin descripción.
+Helpdesk. Este script SIEMPRE escribe:
+  - helpdesk_data.json        → público, commiteado, SIN descripciones.
+  - helpdesk_data.local.json  → gitignorado, CON descripciones (solo si
+                                 existe helpdesk_descripciones.json).
+NUNCA agregar helpdesk_descripciones.json ni helpdesk_data.local.json al
+control de versiones — ya están en .gitignore, no los saques de ahí.
 """
 
 from __future__ import annotations
@@ -56,6 +61,7 @@ HOME = os.path.expanduser("~")
 DOWNLOADS = os.path.join(HOME, "Downloads")
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 OUT_JSON = os.path.join(SCRIPT_DIR, "helpdesk_data.json")
+OUT_JSON_LOCAL = os.path.join(SCRIPT_DIR, "helpdesk_data.local.json")
 DESCRIPCIONES_JSON = os.path.join(SCRIPT_DIR, "helpdesk_descripciones.json")
 
 CLIENTE_EXCLUIDO_DEFAULT = "Accusys"
@@ -167,8 +173,7 @@ def cargar_descripciones() -> dict:
         return json.load(f)
 
 
-def construir_stats(tickets: list[dict], excluir_cliente: str | None) -> dict:
-    descripciones = cargar_descripciones()
+def construir_stats(tickets: list[dict], excluir_cliente: str | None, descripciones: dict) -> dict:
     filtrados = []
     for t in tickets:
         cliente = (t.get("Cliente") or "").strip()
@@ -251,13 +256,22 @@ def main():
     print(f"→ {len(tickets)} filas leídas")
 
     excluir = None if args.incluir_accusys else CLIENTE_EXCLUIDO_DEFAULT
-    stats = construir_stats(tickets, excluir)
 
+    # Salida pública (la que se commitea y se publica en GitHub Pages):
+    # SIEMPRE sin descripciones, sin importar si helpdesk_descripciones.json existe.
+    stats_publico = construir_stats(tickets, excluir, descripciones={})
     with open(OUT_JSON, "w", encoding="utf-8") as f:
-        json.dump(stats, f, ensure_ascii=False, indent=2)
+        json.dump(stats_publico, f, ensure_ascii=False, indent=2)
+    print(f"✓ {stats_publico['total_tickets']} tickets procesados (excluido cliente: {excluir or 'ninguno'})")
+    print(f"✓ Escrito {OUT_JSON} (público, sin descripciones)")
 
-    print(f"✓ {stats['total_tickets']} tickets procesados (excluido cliente: {excluir or 'ninguno'})")
-    print(f"✓ Escrito {OUT_JSON}")
+    # Salida local (gitignorada): con descripciones si hay helpdesk_descripciones.json.
+    descripciones = cargar_descripciones()
+    if descripciones:
+        stats_local = construir_stats(tickets, excluir, descripciones=descripciones)
+        with open(OUT_JSON_LOCAL, "w", encoding="utf-8") as f:
+            json.dump(stats_local, f, ensure_ascii=False, indent=2)
+        print(f"✓ Escrito {OUT_JSON_LOCAL} (privado, con descripciones — NUNCA se commitea)")
 
 
 if __name__ == "__main__":
