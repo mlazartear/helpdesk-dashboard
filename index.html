@@ -98,6 +98,13 @@ table.listado td.descripcion .sin-dato { color: #d1d5db; }
 .filter-bar input[type=text]:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
 .filter-bar .count { font-size: 11px; color: #6b7280; white-space: nowrap; }
 .table-scroll { max-height: 640px; overflow-y: auto; overflow-x: auto; border: 1px solid #f1f3f5; border-radius: 10px; }
+
+.tabs { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid #e2e4e9; }
+.tab-btn { padding: 10px 18px; border: none; background: transparent; font-family: inherit; font-size: 13px; font-weight: 700; color: #6b7280; cursor: pointer; border-bottom: 2.5px solid transparent; margin-bottom: -1px; transition: color .15s, border-color .15s; }
+.tab-btn:hover { color: #2563eb; }
+.tab-btn.active { color: #123a82; border-bottom-color: #123a82; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
 </style>
 </head>
 <body>
@@ -291,79 +298,97 @@ function render(data) {
   const listadoRows = ticketsOrdenados.map(filaTicket).join('');
 
   document.getElementById('app').innerHTML = `
-    ${kpis}
-    <div class="grid-2">
-      <div class="panel">
-        <div class="panel-head">📈 Casos creados por mes (por cliente)</div>
-        <div class="panel-body">
-          <div class="bars-month">${barsMonth || '<div class="empty">Sin datos</div>'}</div>
-          <div class="legend">${legend}</div>
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="metricas">📊 Métricas generales</button>
+      <button class="tab-btn" data-tab="tipificacion">🔧 Tipificación y listado</button>
+    </div>
+
+    <div class="tab-panel active" id="tab-metricas">
+      ${kpis}
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-head">📈 Casos creados por mes (por cliente)</div>
+          <div class="panel-body">
+            <div class="bars-month">${barsMonth || '<div class="empty">Sin datos</div>'}</div>
+            <div class="legend">${legend}</div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">🏢 Casos por cliente (total del período)</div>
+          <div class="panel-body">${hbars || '<div class="empty">Sin datos</div>'}</div>
         </div>
       </div>
-      <div class="panel">
-        <div class="panel-head">🏢 Casos por cliente (total del período)</div>
-        <div class="panel-body">${hbars || '<div class="empty">Sin datos</div>'}</div>
-      </div>
-    </div>
 
-    <div class="grid-2">
-      <div class="panel">
-        <div class="panel-head">🗂️ Distribución por tipo</div>
-        <div class="panel-body"><div class="chip-row">${tipoChips}</div></div>
-      </div>
-      <div class="panel">
-        <div class="panel-head">🚦 Distribución por estado</div>
-        <div class="panel-body"><div class="chip-row">${estadoChips}</div></div>
-      </div>
-    </div>
-
-    <div class="panel">
-      <div class="panel-head">🔧 Tipificación de errores</div>
-      <div class="panel-body">
-        ${tipifHbars || '<div class="empty">Sin datos</div>'}
-        <div class="foot-note">Clasificación automática por palabras clave en el título del ticket (heurística, no es un campo del Helpdesk).</div>
-      </div>
-    </div>
-
-    <div class="panel">
-      <div class="panel-head">📋 Tipificación por cliente</div>
-      <div class="panel-body table-wrap">
-        <table class="pivot">
-          <thead><tr>${pivotTipifHead}</tr></thead>
-          <tbody>${pivotTipifRows}${pivotTipifTotalRow}</tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="panel">
-      <div class="panel-head">📋 Detalle: ingresos por mes y cliente</div>
-      <div class="panel-body table-wrap">
-        <table class="pivot">
-          <thead><tr>${pivotHead}</tr></thead>
-          <tbody>${pivotRows}${pivotTotalRow}</tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="panel">
-      <div class="panel-head">🎫 Listado completo de tickets</div>
-      <div class="panel-body">
-        <div class="filter-bar">
-          <input type="text" id="filtroTickets" placeholder="Buscar por título, descripción, cliente, autor, tipo, tipificación, estado…">
-          <span class="count" id="filtroCount">${ticketsOrdenados.length} tickets</span>
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-head">🗂️ Distribución por tipo</div>
+          <div class="panel-body"><div class="chip-row">${tipoChips}</div></div>
         </div>
-        <div class="table-scroll">
-          <table class="listado">
-            <thead><tr>
-              <th>ID</th><th>Cliente</th><th>Título</th><th>Descripción</th><th>Tipo</th><th>Tipificación</th>
-              <th>Autor</th><th>Prioridad</th><th>Estado</th><th>Creación</th>
-            </tr></thead>
-            <tbody id="listadoBody">${listadoRows || '<tr><td colspan="10" class="empty">Sin tickets</td></tr>'}</tbody>
+        <div class="panel">
+          <div class="panel-head">🚦 Distribución por estado</div>
+          <div class="panel-body"><div class="chip-row">${estadoChips}</div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">📋 Detalle: ingresos por mes y cliente</div>
+        <div class="panel-body table-wrap">
+          <table class="pivot">
+            <thead><tr>${pivotHead}</tr></thead>
+            <tbody>${pivotRows}${pivotTotalRow}</tbody>
           </table>
         </div>
       </div>
     </div>
+
+    <div class="tab-panel" id="tab-tipificacion">
+      <div class="panel">
+        <div class="panel-head">🔧 Tipificación de errores</div>
+        <div class="panel-body">
+          ${tipifHbars || '<div class="empty">Sin datos</div>'}
+          <div class="foot-note">Clasificación automática por palabras clave en el título del ticket (heurística, no es un campo del Helpdesk).</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">📋 Tipificación por cliente</div>
+        <div class="panel-body table-wrap">
+          <table class="pivot">
+            <thead><tr>${pivotTipifHead}</tr></thead>
+            <tbody>${pivotTipifRows}${pivotTipifTotalRow}</tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">🎫 Listado completo de tickets</div>
+        <div class="panel-body">
+          <div class="filter-bar">
+            <input type="text" id="filtroTickets" placeholder="Buscar por título, descripción, cliente, autor, tipo, tipificación, estado…">
+            <span class="count" id="filtroCount">${ticketsOrdenados.length} tickets</span>
+          </div>
+          <div class="table-scroll">
+            <table class="listado">
+              <thead><tr>
+                <th>ID</th><th>Cliente</th><th>Título</th><th>Descripción</th><th>Tipo</th><th>Tipificación</th>
+                <th>Autor</th><th>Prioridad</th><th>Estado</th><th>Creación</th>
+              </tr></thead>
+              <tbody id="listadoBody">${listadoRows || '<tr><td colspan="10" class="empty">Sin tickets</td></tr>'}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
   `;
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
 
   const filtroInput = document.getElementById('filtroTickets');
   const filtroCount = document.getElementById('filtroCount');
