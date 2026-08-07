@@ -542,11 +542,13 @@ async function adoFetchItemsByIds(ids) {
   return raw;
 }
 
+const ADO_TIPO_FILTRADO = 'Task de Implementación';
+
 async function adoFetchWorkItems() {
   const areaPaths = await adoFetchTeamAreaPaths(adoCfg.team);
   const areaFilter = adoBuildAreaFilter(areaPaths);
   const maxItems = adoCfg.maxItems || 500;
-  const wiql = { query: `SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = @project AND [System.State] NOT IN ('Removed','Cut','Cancelled','Rejected','Withdrawn') ${areaFilter} ORDER BY [System.CreatedDate] DESC` };
+  const wiql = { query: `SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = @project AND [System.WorkItemType] = '${ADO_TIPO_FILTRADO.replace(/'/g, "''")}' AND [System.State] NOT IN ('Removed','Cut','Cancelled','Rejected','Withdrawn') ${areaFilter} ORDER BY [System.CreatedDate] DESC` };
   const r = await fetch(`${adoBase()}/_apis/wit/wiql?$top=${maxItems}&api-version=7.1`, {
     method: 'POST', headers: adoAuthHdr(), body: JSON.stringify(wiql)
   });
@@ -563,7 +565,7 @@ function adoConfigForm() {
     <div class="panel">
       <div class="panel-head">⚙️ Configurar Azure DevOps</div>
       <div class="panel-body">
-        <p class="foot-note" style="margin-top:0 0 14px">Los datos se guardan localmente en tu navegador (el PAT en sessionStorage, se borra al cerrar la pestaña del navegador). Nunca se suben a GitHub ni pasan por ningún servidor propio — solo se usan para llamar directo a la API de Azure DevOps.</p>
+        <p class="foot-note" style="margin-top:0 0 14px">Los datos se guardan localmente en tu navegador (el PAT en sessionStorage, se borra al cerrar la pestaña del navegador). Nunca se suben a GitHub ni pasan por ningún servidor propio — solo se usan para llamar directo a la API de Azure DevOps.<br><br>Esta pestaña solo trae work items de tipo <b>"${esc(ADO_TIPO_FILTRADO)}"</b> (se excluye "Task de Análisis" y cualquier otro tipo).</p>
         <div class="filter-bar" style="flex-direction:column; align-items:stretch; gap:12px;">
           <div>
             <label style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px;">Organization</label>
@@ -629,12 +631,12 @@ function renderAdo(items) {
   const mesActualKey = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}`;
 
   const porMes = {};
-  const porTipo = {};
+  const porEstado = {};
   for (const it of items) {
     const f = it.fields || {};
     const fecha = adoParseDate(f['System.CreatedDate']);
-    const tipo = f['System.WorkItemType'] || 'Sin tipo';
-    porTipo[tipo] = (porTipo[tipo] || 0) + 1;
+    const estado = f['System.State'] || 'Sin estado';
+    porEstado[estado] = (porEstado[estado] || 0) + 1;
     if (fecha) {
       const key = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
       porMes[key] = (porMes[key] || 0) + 1;
@@ -653,14 +655,15 @@ function renderAdo(items) {
     </div>`;
   }).join('');
 
-  const tipoChips = Object.entries(porTipo).sort((a, b) => b[1] - a[1])
-    .map(([tipo, n]) => `<span class="chip">${esc(tipo)}: ${n}</span>`).join('');
+  const estadoChips = Object.entries(porEstado).sort((a, b) => b[1] - a[1])
+    .map(([estado, n]) => `<span class="chip">${esc(estado)}: ${n}</span>`).join('');
+  const estadoTop = Object.entries(porEstado).sort((a, b) => b[1] - a[1])[0];
 
   mount.innerHTML = `
     <div class="kpi-row">
       <div class="kpi-card">
         <div class="icon">🚀</div>
-        <div class="label">Total work items</div>
+        <div class="label">Total "${esc(ADO_TIPO_FILTRADO)}"</div>
         <div class="value">${items.length}</div>
         <div class="foot">en ${adoCfg.team ? `equipo "${esc(adoCfg.team)}"` : 'todo el proyecto'}</div>
       </div>
@@ -671,29 +674,29 @@ function renderAdo(items) {
         <div class="foot">creados este mes</div>
       </div>
       <div class="kpi-card">
-        <div class="icon">🗂️</div>
-        <div class="label">Tipo más frecuente</div>
-        <div class="value" style="font-size:18px">${esc(Object.entries(porTipo).sort((a,b)=>b[1]-a[1])[0]?.[0] || '—')}</div>
-        <div class="foot">${Object.entries(porTipo).sort((a,b)=>b[1]-a[1])[0]?.[1] || 0} items</div>
+        <div class="icon">🚦</div>
+        <div class="label">Estado más frecuente</div>
+        <div class="value" style="font-size:18px">${esc(estadoTop?.[0] || '—')}</div>
+        <div class="foot">${estadoTop?.[1] || 0} items</div>
       </div>
     </div>
 
     <div class="panel" style="margin-bottom:16px">
-      <div class="panel-head">📈 Work items creados por mes</div>
+      <div class="panel-head">📈 "${esc(ADO_TIPO_FILTRADO)}" creados por mes</div>
       <div class="panel-body">
         <div class="bars-month">${barsMonth || '<div class="empty">Sin datos</div>'}</div>
       </div>
     </div>
 
     <div class="panel" style="margin-bottom:16px">
-      <div class="panel-head">🗂️ Distribución por tipo</div>
-      <div class="panel-body"><div class="chip-row">${tipoChips || '<div class="empty">Sin datos</div>'}</div></div>
+      <div class="panel-head">🚦 Distribución por estado</div>
+      <div class="panel-body"><div class="chip-row">${estadoChips || '<div class="empty">Sin datos</div>'}</div></div>
     </div>
 
     <div class="filter-bar">
       <button class="btn" onclick="cargarAdo()">↻ Recargar</button>
       <button class="btn" onclick="reconfigurarAdo()">⚙️ Reconfigurar</button>
-      <span class="hint">Organization: ${esc(adoCfg.org)} · Project: ${esc(adoCfg.project)}${adoCfg.team ? ' · Team: ' + esc(adoCfg.team) : ''}</span>
+      <span class="hint">Organization: ${esc(adoCfg.org)} · Project: ${esc(adoCfg.project)}${adoCfg.team ? ' · Team: ' + esc(adoCfg.team) : ''} · Tipo: ${esc(ADO_TIPO_FILTRADO)}</span>
     </div>
   `;
 }
