@@ -79,7 +79,10 @@ table.listado thead th { background: #f8f9fb; color: #6b7280; font-weight: 700; 
 table.listado tbody tr:hover { background: #fafbfd; }
 table.listado td.id a { color: #2563eb; text-decoration: none; font-weight: 700; }
 table.listado td.id a:hover { text-decoration: underline; }
-table.listado td.titulo { max-width: 340px; }
+table.listado td.titulo { max-width: 260px; }
+table.listado td.descripcion { max-width: 320px; cursor: pointer; color: #4b5563; -webkit-line-clamp: 2; -webkit-box-orient: vertical; display: -webkit-box; overflow: hidden; }
+table.listado td.descripcion.expandida { -webkit-line-clamp: unset; max-width: 420px; white-space: pre-wrap; background: #fafbfd; }
+table.listado td.descripcion .sin-dato { color: #d1d5db; }
 .badge { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 10.5px; font-weight: 700; white-space: nowrap; }
 .badge.estado-cerrado { background: #ecfdf5; color: #059669; }
 .badge.estado-resuelto { background: #eff6ff; color: #2563eb; }
@@ -276,6 +279,7 @@ function render(data) {
       <td class="id"><a href="https://helpdesk.accusys.com.ar/tickets/${t.id}" target="_blank" rel="noopener">#${t.id}</a></td>
       <td>${esc(t.cliente)}</td>
       <td class="titulo">${esc(t.titulo)}</td>
+      <td class="descripcion" onclick="this.classList.toggle('expandida')" title="Click para expandir/colapsar">${esc(t.descripcion) || '<span class="sin-dato">—</span>'}</td>
       <td>${esc(t.tipo)}</td>
       <td>${esc(t.tipificacion)}</td>
       <td>${esc(t.autor)}</td>
@@ -345,16 +349,16 @@ function render(data) {
       <div class="panel-head">🎫 Listado completo de tickets</div>
       <div class="panel-body">
         <div class="filter-bar">
-          <input type="text" id="filtroTickets" placeholder="Buscar por título, cliente, autor, tipo, tipificación, estado…">
+          <input type="text" id="filtroTickets" placeholder="Buscar por título, descripción, cliente, autor, tipo, tipificación, estado…">
           <span class="count" id="filtroCount">${ticketsOrdenados.length} tickets</span>
         </div>
         <div class="table-scroll">
           <table class="listado">
             <thead><tr>
-              <th>ID</th><th>Cliente</th><th>Título</th><th>Tipo</th><th>Tipificación</th>
+              <th>ID</th><th>Cliente</th><th>Título</th><th>Descripción</th><th>Tipo</th><th>Tipificación</th>
               <th>Autor</th><th>Prioridad</th><th>Estado</th><th>Creación</th>
             </tr></thead>
-            <tbody id="listadoBody">${listadoRows || '<tr><td colspan="9" class="empty">Sin tickets</td></tr>'}</tbody>
+            <tbody id="listadoBody">${listadoRows || '<tr><td colspan="10" class="empty">Sin tickets</td></tr>'}</tbody>
           </table>
         </div>
       </div>
@@ -367,10 +371,10 @@ function render(data) {
     const q = slug(filtroInput.value).replace(/-/g, '');
     const visibles = ticketsOrdenados.filter(t => {
       if (!q) return true;
-      const haystack = slug([t.id, t.cliente, t.titulo, t.tipo, t.tipificacion, t.autor, t.prioridad, t.estado].join(' ')).replace(/-/g, '');
+      const haystack = slug([t.id, t.cliente, t.titulo, t.descripcion, t.tipo, t.tipificacion, t.autor, t.prioridad, t.estado].join(' ')).replace(/-/g, '');
       return haystack.includes(q);
     });
-    document.getElementById('listadoBody').innerHTML = visibles.map(filaTicket).join('') || '<tr><td colspan="9" class="empty">Sin resultados</td></tr>';
+    document.getElementById('listadoBody').innerHTML = visibles.map(filaTicket).join('') || '<tr><td colspan="10" class="empty">Sin resultados</td></tr>';
     filtroCount.textContent = `${visibles.length} de ${ticketsOrdenados.length} tickets`;
   });
 }

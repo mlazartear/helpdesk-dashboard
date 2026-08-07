@@ -28,6 +28,11 @@ Puertos, Ejecutor, Timeout, Agente, Log de Operaciones, Contingencia, Claves,
 Exportación/Importación, Middleware, Configuración, Comandos, Bitácora,
 Consulta general, Otros). Es una heurística de texto, no un campo real del
 Helpdesk — revisar y ajustar las keywords si una categoría queda mal armada.
+
+Descripciones: el Excel exportado no trae el primer mensaje/descripción del
+ticket (solo título). helpdesk_descripciones.json es un complemento manual
+{"id_ticket": "descripción"} armado a mano abriendo cada ticket en el
+Helpdesk — opcional, si falta un ID simplemente queda sin descripción.
 """
 
 from __future__ import annotations
@@ -49,7 +54,9 @@ except ImportError:
 
 HOME = os.path.expanduser("~")
 DOWNLOADS = os.path.join(HOME, "Downloads")
-OUT_JSON = os.path.join(os.path.dirname(os.path.abspath(__file__)), "helpdesk_data.json")
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+OUT_JSON = os.path.join(SCRIPT_DIR, "helpdesk_data.json")
+DESCRIPCIONES_JSON = os.path.join(SCRIPT_DIR, "helpdesk_descripciones.json")
 
 CLIENTE_EXCLUIDO_DEFAULT = "Accusys"
 
@@ -146,7 +153,22 @@ def a_fecha(valor) -> datetime | None:
         return None
 
 
+def cargar_descripciones() -> dict:
+    """Carga helpdesk_descripciones.json: {id_ticket: descripcion}.
+
+    El Excel exportado NO trae la descripción/primer mensaje del ticket (solo
+    título), así que este archivo es un complemento manual/opcional armado
+    abriendo cada ticket en el Helpdesk. Si no existe, simplemente no hay
+    descripción disponible (el dashboard lo maneja bien, queda vacío).
+    """
+    if not os.path.isfile(DESCRIPCIONES_JSON):
+        return {}
+    with open(DESCRIPCIONES_JSON, encoding="utf-8") as f:
+        return json.load(f)
+
+
 def construir_stats(tickets: list[dict], excluir_cliente: str | None) -> dict:
+    descripciones = cargar_descripciones()
     filtrados = []
     for t in tickets:
         cliente = (t.get("Cliente") or "").strip()
@@ -156,10 +178,12 @@ def construir_stats(tickets: list[dict], excluir_cliente: str | None) -> dict:
         if fecha is None:
             continue
         titulo = t.get("Título")
+        ticket_id = t.get("ID")
         filtrados.append({
-            "id": t.get("ID"),
+            "id": ticket_id,
             "cliente": cliente,
             "titulo": titulo,
+            "descripcion": descripciones.get(str(ticket_id), ""),
             "tipo": t.get("Tipo"),
             "tipificacion": tipificar(titulo),
             "autor": t.get("Autor"),
