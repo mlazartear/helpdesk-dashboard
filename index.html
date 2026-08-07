@@ -76,6 +76,10 @@ table.pivot td.total, table.pivot th.total { font-weight: 800; color: #111827; b
 table.listado { width: 100%; border-collapse: collapse; font-size: 12px; }
 table.listado th, table.listado td { padding: 9px 10px; text-align: left; border-bottom: 1px solid #f1f3f5; vertical-align: top; }
 table.listado thead th { background: #f8f9fb; color: #6b7280; font-weight: 700; font-size: 10.5px; text-transform: uppercase; letter-spacing: .3px; white-space: nowrap; position: sticky; top: 0; }
+table.listado thead th.sortable { cursor: pointer; user-select: none; }
+table.listado thead th.sortable:hover { color: #2563eb; }
+table.listado thead th.sort-activo { color: #123a82; }
+table.listado thead th .sort-ind { font-size: 9px; }
 table.listado tbody tr:hover { background: #fafbfd; }
 table.listado td.id a { color: #2563eb; text-decoration: none; font-weight: 700; }
 table.listado td.id a:hover { text-decoration: underline; }
@@ -370,8 +374,16 @@ function render(data) {
           <div class="table-scroll">
             <table class="listado">
               <thead><tr>
-                <th>ID</th><th>Cliente</th><th>Título</th><th>Descripción</th><th>Tipo</th><th>Tipificación</th>
-                <th>Autor</th><th>Prioridad</th><th>Estado</th><th>Creación</th>
+                <th class="sortable" data-campo="id">ID<span class="sort-ind"></span></th>
+                <th class="sortable" data-campo="cliente">Cliente<span class="sort-ind"></span></th>
+                <th class="sortable" data-campo="titulo">Título<span class="sort-ind"></span></th>
+                <th>Descripción</th>
+                <th class="sortable" data-campo="tipo">Tipo<span class="sort-ind"></span></th>
+                <th class="sortable" data-campo="tipificacion">Tipificación<span class="sort-ind"></span></th>
+                <th class="sortable" data-campo="autor">Autor<span class="sort-ind"></span></th>
+                <th class="sortable" data-campo="prioridad">Prioridad<span class="sort-ind"></span></th>
+                <th class="sortable" data-campo="estado">Estado<span class="sort-ind"></span></th>
+                <th class="sortable" data-campo="creacion">Creación<span class="sort-ind"></span></th>
               </tr></thead>
               <tbody id="listadoBody">${listadoRows || '<tr><td colspan="10" class="empty">Sin tickets</td></tr>'}</tbody>
             </table>
@@ -392,16 +404,60 @@ function render(data) {
 
   const filtroInput = document.getElementById('filtroTickets');
   const filtroCount = document.getElementById('filtroCount');
-  filtroInput.addEventListener('input', () => {
+  const sortState = { campo: 'creacion', dir: 'desc' };
+
+  const actualizarIndicadoresSort = () => {
+    document.querySelectorAll('#tab-tipificacion th.sortable').forEach(th => {
+      const ind = th.querySelector('.sort-ind');
+      if (th.dataset.campo === sortState.campo) {
+        th.classList.add('sort-activo');
+        ind.textContent = sortState.dir === 'asc' ? ' ▲' : ' ▼';
+      } else {
+        th.classList.remove('sort-activo');
+        ind.textContent = '';
+      }
+    });
+  };
+
+  const refrescarListado = () => {
     const q = slug(filtroInput.value).replace(/-/g, '');
-    const visibles = ticketsOrdenados.filter(t => {
+    let visibles = ticketsOrdenados.filter(t => {
       if (!q) return true;
       const haystack = slug([t.id, t.cliente, t.titulo, t.descripcion, t.tipo, t.tipificacion, t.autor, t.prioridad, t.estado].join(' ')).replace(/-/g, '');
       return haystack.includes(q);
     });
+
+    const { campo, dir } = sortState;
+    const mult = dir === 'asc' ? 1 : -1;
+    visibles = [...visibles].sort((a, b) => {
+      let va = a[campo], vb = b[campo];
+      if (campo === 'id') { va = Number(va) || 0; vb = Number(vb) || 0; return (va - vb) * mult; }
+      va = (va || '').toString().toLowerCase();
+      vb = (vb || '').toString().toLowerCase();
+      return va.localeCompare(vb, 'es') * mult;
+    });
+
     document.getElementById('listadoBody').innerHTML = visibles.map(filaTicket).join('') || '<tr><td colspan="10" class="empty">Sin resultados</td></tr>';
-    filtroCount.textContent = `${visibles.length} de ${ticketsOrdenados.length} tickets`;
+    filtroCount.textContent = q ? `${visibles.length} de ${ticketsOrdenados.length} tickets` : `${visibles.length} tickets`;
+    actualizarIndicadoresSort();
+  };
+
+  filtroInput.addEventListener('input', refrescarListado);
+
+  document.querySelectorAll('#tab-tipificacion th.sortable').forEach(th => {
+    th.addEventListener('click', () => {
+      const campo = th.dataset.campo;
+      if (sortState.campo === campo) {
+        sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+      } else {
+        sortState.campo = campo;
+        sortState.dir = 'asc';
+      }
+      refrescarListado();
+    });
   });
+
+  actualizarIndicadoresSort();
 }
 
 cargar();
