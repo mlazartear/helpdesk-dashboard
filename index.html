@@ -70,6 +70,31 @@ table.pivot td.total, table.pivot th.total { font-weight: 800; color: #111827; b
 
 .empty { padding: 40px; text-align: center; color: #9ca3af; }
 .empty b { color: #374151; }
+
+.foot-note { font-size: 11px; color: #9ca3af; margin-top: 14px; line-height: 1.5; }
+
+table.listado { width: 100%; border-collapse: collapse; font-size: 12px; }
+table.listado th, table.listado td { padding: 9px 10px; text-align: left; border-bottom: 1px solid #f1f3f5; vertical-align: top; }
+table.listado thead th { background: #f8f9fb; color: #6b7280; font-weight: 700; font-size: 10.5px; text-transform: uppercase; letter-spacing: .3px; white-space: nowrap; position: sticky; top: 0; }
+table.listado tbody tr:hover { background: #fafbfd; }
+table.listado td.id a { color: #2563eb; text-decoration: none; font-weight: 700; }
+table.listado td.id a:hover { text-decoration: underline; }
+table.listado td.titulo { max-width: 340px; }
+.badge { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 10.5px; font-weight: 700; white-space: nowrap; }
+.badge.estado-cerrado { background: #ecfdf5; color: #059669; }
+.badge.estado-resuelto { background: #eff6ff; color: #2563eb; }
+.badge.estado-en-curso { background: #fffbeb; color: #d97706; }
+.badge.estado-en-espera { background: #fef2f2; color: #dc2626; }
+.badge.estado-asignado { background: #f3f4f6; color: #4b5563; }
+.badge.prioridad-alta { background: #fff7ed; color: #ea580c; }
+.badge.prioridad-media { background: #fefce8; color: #ca8a04; }
+.badge.prioridad-baja { background: #f0fdf4; color: #16a34a; }
+.badge.prioridad-urgente { background: #fef2f2; color: #dc2626; }
+.filter-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.filter-bar input[type=text] { flex: 1; min-width: 220px; border: 1px solid #e2e4e9; border-radius: 8px; padding: 8px 12px; font-size: 12px; font-family: inherit; }
+.filter-bar input[type=text]:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+.filter-bar .count { font-size: 11px; color: #6b7280; white-space: nowrap; }
+.table-scroll { max-height: 640px; overflow-y: auto; overflow-x: auto; border: 1px solid #f1f3f5; border-radius: 10px; }
 </style>
 </head>
 <body>
@@ -194,6 +219,31 @@ function render(data) {
   const estadoChips = Object.entries(data.por_estado).map(([estado, n]) =>
     `<span class="chip" style="background:#f0fdf4;color:#059669;border-color:#dcfce7">${estado}: ${n}</span>`).join('');
 
+  const tipificaciones = Object.entries(data.por_tipificacion || {});
+  const maxTipif = Math.max(1, ...tipificaciones.map(([, n]) => n));
+  const colorTipif = {};
+  tipificaciones.forEach(([cat], i) => colorTipif[cat] = PALETA[i % PALETA.length]);
+
+  const tipifHbars = tipificaciones.map(([cat, n]) => `
+    <div class="hbar-row">
+      <div class="name" title="${cat}">${cat}</div>
+      <div class="hbar-track"><div class="hbar-fill" style="width:${(n/maxTipif*100).toFixed(1)}%; background:${colorTipif[cat]}"></div></div>
+      <div class="num">${n}</div>
+    </div>`).join('');
+
+  const pivotTipifHead = `<th>Tipificación</th>` + clientes.map(c => `<th>${c.nombre}</th>`).join('') + `<th class="total">Total</th>`;
+  const pivotTipifRows = tipificaciones.map(([cat, total]) => {
+    const porCliente = (data.por_tipificacion_cliente || {})[cat] || {};
+    const cells = clientes.map(c => {
+      const v = porCliente[c.nombre] || 0;
+      return `<td>${v || '—'}</td>`;
+    }).join('');
+    return `<tr><td>${cat}</td>${cells}<td class="total">${total}</td></tr>`;
+  }).join('');
+  const pivotTipifTotalRow = `<tr><td class="total">Total</td>` +
+    clientes.map(c => `<td class="total">${c.total}</td>`).join('') +
+    `<td class="total">${data.total_tickets}</td></tr>`;
+
   const pivotHead = `<th>Cliente</th>` + meses.map(m => `<th>${m.etiqueta}</th>`).join('') + `<th class="total">Total</th>`;
   const pivotRows = clientes.map(c => {
     const cells = meses.map(m => {
@@ -205,6 +255,36 @@ function render(data) {
   const pivotTotalRow = `<tr><td class="total">Total</td>` +
     meses.map(m => `<td class="total">${m.total}</td>`).join('') +
     `<td class="total">${data.total_tickets}</td></tr>`;
+
+  const slug = s => (s || '').toString().toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+  const esc = s => (s == null ? '' : String(s))
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  const fmtFecha = iso => {
+    const d = new Date(iso);
+    if (isNaN(d)) return iso || '—';
+    return d.toLocaleDateString('es-AR') + ' ' + d.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'});
+  };
+
+  const ticketsOrdenados = [...(data.tickets || [])].sort((a, b) => (b.creacion || '').localeCompare(a.creacion || ''));
+
+  const filaTicket = t => `
+    <tr>
+      <td class="id"><a href="https://helpdesk.accusys.com.ar/tickets/${t.id}" target="_blank" rel="noopener">#${t.id}</a></td>
+      <td>${esc(t.cliente)}</td>
+      <td class="titulo">${esc(t.titulo)}</td>
+      <td>${esc(t.tipo)}</td>
+      <td>${esc(t.tipificacion)}</td>
+      <td>${esc(t.autor)}</td>
+      <td><span class="badge prioridad-${slug(t.prioridad)}">${esc(t.prioridad)}</span></td>
+      <td><span class="badge estado-${slug(t.estado)}">${esc(t.estado)}</span></td>
+      <td>${fmtFecha(t.creacion)}</td>
+    </tr>`;
+
+  const listadoRows = ticketsOrdenados.map(filaTicket).join('');
 
   document.getElementById('app').innerHTML = `
     ${kpis}
@@ -234,6 +314,24 @@ function render(data) {
     </div>
 
     <div class="panel">
+      <div class="panel-head">🔧 Tipificación de errores</div>
+      <div class="panel-body">
+        ${tipifHbars || '<div class="empty">Sin datos</div>'}
+        <div class="foot-note">Clasificación automática por palabras clave en el título del ticket (heurística, no es un campo del Helpdesk).</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">📋 Tipificación por cliente</div>
+      <div class="panel-body table-wrap">
+        <table class="pivot">
+          <thead><tr>${pivotTipifHead}</tr></thead>
+          <tbody>${pivotTipifRows}${pivotTipifTotalRow}</tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
       <div class="panel-head">📋 Detalle: ingresos por mes y cliente</div>
       <div class="panel-body table-wrap">
         <table class="pivot">
@@ -242,7 +340,39 @@ function render(data) {
         </table>
       </div>
     </div>
+
+    <div class="panel">
+      <div class="panel-head">🎫 Listado completo de tickets</div>
+      <div class="panel-body">
+        <div class="filter-bar">
+          <input type="text" id="filtroTickets" placeholder="Buscar por título, cliente, autor, tipo, tipificación, estado…">
+          <span class="count" id="filtroCount">${ticketsOrdenados.length} tickets</span>
+        </div>
+        <div class="table-scroll">
+          <table class="listado">
+            <thead><tr>
+              <th>ID</th><th>Cliente</th><th>Título</th><th>Tipo</th><th>Tipificación</th>
+              <th>Autor</th><th>Prioridad</th><th>Estado</th><th>Creación</th>
+            </tr></thead>
+            <tbody id="listadoBody">${listadoRows || '<tr><td colspan="9" class="empty">Sin tickets</td></tr>'}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   `;
+
+  const filtroInput = document.getElementById('filtroTickets');
+  const filtroCount = document.getElementById('filtroCount');
+  filtroInput.addEventListener('input', () => {
+    const q = slug(filtroInput.value).replace(/-/g, '');
+    const visibles = ticketsOrdenados.filter(t => {
+      if (!q) return true;
+      const haystack = slug([t.id, t.cliente, t.titulo, t.tipo, t.tipificacion, t.autor, t.prioridad, t.estado].join(' ')).replace(/-/g, '');
+      return haystack.includes(q);
+    });
+    document.getElementById('listadoBody').innerHTML = visibles.map(filaTicket).join('') || '<tr><td colspan="9" class="empty">Sin resultados</td></tr>';
+    filtroCount.textContent = `${visibles.length} de ${ticketsOrdenados.length} tickets`;
+  });
 }
 
 cargar();

@@ -21,6 +21,13 @@ El dashboard lee helpdesk_data.json (mismo directorio) vía fetch.
 
 Cliente "Accusys" se excluye de las estadísticas por pedido explícito
 (son tickets internos, no de clientes) — ver flag --incluir-accusys.
+
+Cada ticket recibe además una "tipificación de error" automática, clasificada
+por palabras clave en el título (ver TIPIFICACION_CATEGORIAS más abajo:
+Puertos, Ejecutor, Timeout, Agente, Log de Operaciones, Contingencia, Claves,
+Exportación/Importación, Middleware, Configuración, Comandos, Bitácora,
+Consulta general, Otros). Es una heurística de texto, no un campo real del
+Helpdesk — revisar y ajustar las keywords si una categoría queda mal armada.
 """
 
 from __future__ import annotations
@@ -30,6 +37,7 @@ import glob
 import json
 import os
 import sys
+import unicodedata
 from collections import defaultdict
 from datetime import datetime
 
@@ -49,6 +57,40 @@ MESES_ES = [
     "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
     "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
 ]
+
+# Tipificación automática de errores por palabras clave en el título.
+# Orden = prioridad: la primera categoría cuyo keyword aparece en el título gana
+# (muchos títulos mencionan varios términos de paso, ej. "Ejecutor: Comando...").
+TIPIFICACION_CATEGORIAS = [
+    ("Puertos", ["puerto"]),
+    ("Ejecutor", ["ejecutor"]),
+    ("Timeout", ["timeout", "time out"]),
+    ("Agente", ["agente"]),
+    ("Log de Operaciones", ["log operaciones", "log de operaciones"]),
+    ("Contingencia", ["contingencia"]),
+    ("Claves / Generación", ["clave"]),
+    ("Exportación / Importación", ["exportacion", "importacion"]),
+    ("Middleware", ["middleware"]),
+    ("Configuración", ["configuracion"]),
+    ("Comandos", ["comando"]),
+    ("Bitácora", ["bitacora"]),
+    ("Consulta general", ["consulta"]),
+]
+
+
+def _sin_acentos(s: str) -> str:
+    s = s.lower()
+    return "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
+
+
+def tipificar(titulo: str | None) -> str:
+    if not titulo:
+        return "Otros"
+    t = _sin_acentos(titulo)
+    for categoria, keywords in TIPIFICACION_CATEGORIAS:
+        if any(kw in t for kw in keywords):
+            return categoria
+    return "Otros"
 
 
 def encontrar_ultimo_excel() -> str | None:
@@ -113,11 +155,13 @@ def construir_stats(tickets: list[dict], excluir_cliente: str | None) -> dict:
         fecha = a_fecha(t.get("Creación"))
         if fecha is None:
             continue
+        titulo = t.get("Título")
         filtrados.append({
             "id": t.get("ID"),
             "cliente": cliente,
-            "titulo": t.get("Título"),
+            "titulo": titulo,
             "tipo": t.get("Tipo"),
+            "tipificacion": tipificar(titulo),
             "autor": t.get("Autor"),
             "prioridad": t.get("Prioridad"),
             "estado": t.get("Estado"),
@@ -130,6 +174,8 @@ def construir_stats(tickets: list[dict], excluir_cliente: str | None) -> dict:
     por_mes_cliente = defaultdict(lambda: defaultdict(int))
     por_tipo = defaultdict(int)
     por_estado = defaultdict(int)
+    por_tipificacion = defaultdict(int)
+    por_tipificacion_cliente = defaultdict(lambda: defaultdict(int))
 
     for t in filtrados:
         por_mes[t["mes"]] += 1
@@ -137,6 +183,8 @@ def construir_stats(tickets: list[dict], excluir_cliente: str | None) -> dict:
         por_mes_cliente[t["mes"]][t["cliente"]] += 1
         por_tipo[t["tipo"]] += 1
         por_estado[t["estado"]] += 1
+        por_tipificacion[t["tipificacion"]] += 1
+        por_tipificacion_cliente[t["tipificacion"]][t["cliente"]] += 1
 
     meses_ordenados = sorted(por_mes.keys())
     clientes_ordenados = sorted(por_cliente.keys(), key=lambda c: -por_cliente[c])
@@ -154,6 +202,8 @@ def construir_stats(tickets: list[dict], excluir_cliente: str | None) -> dict:
         "por_mes_cliente": {m: dict(por_mes_cliente[m]) for m in meses_ordenados},
         "por_tipo": dict(sorted(por_tipo.items(), key=lambda kv: -kv[1])),
         "por_estado": dict(sorted(por_estado.items(), key=lambda kv: -kv[1])),
+        "por_tipificacion": dict(sorted(por_tipificacion.items(), key=lambda kv: -kv[1])),
+        "por_tipificacion_cliente": {k: dict(v) for k, v in por_tipificacion_cliente.items()},
         "tickets": filtrados,
     }
 
