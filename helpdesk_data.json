@@ -1,0 +1,584 @@
+{
+  "generado": "2026-08-06T21:53:53",
+  "total_tickets": 43,
+  "cliente_excluido": "Accusys",
+  "meses": [
+    {
+      "clave": "2026-03",
+      "etiqueta": "Marzo 2026",
+      "total": 2
+    },
+    {
+      "clave": "2026-05",
+      "etiqueta": "Mayo 2026",
+      "total": 4
+    },
+    {
+      "clave": "2026-06",
+      "etiqueta": "Junio 2026",
+      "total": 11
+    },
+    {
+      "clave": "2026-07",
+      "etiqueta": "Julio 2026",
+      "total": 24
+    },
+    {
+      "clave": "2026-08",
+      "etiqueta": "Agosto 2026",
+      "total": 2
+    }
+  ],
+  "clientes": [
+    {
+      "nombre": "OSDE",
+      "total": 18
+    },
+    {
+      "nombre": "Banco Piano",
+      "total": 10
+    },
+    {
+      "nombre": "Banco Macro",
+      "total": 4
+    },
+    {
+      "nombre": "Banco BST",
+      "total": 4
+    },
+    {
+      "nombre": "Banco San Juan",
+      "total": 3
+    },
+    {
+      "nombre": "Banco Valores",
+      "total": 2
+    },
+    {
+      "nombre": "Banco BICE",
+      "total": 1
+    },
+    {
+      "nombre": "Banco Entre Ríos",
+      "total": 1
+    }
+  ],
+  "por_mes_cliente": {
+    "2026-03": {
+      "Banco San Juan": 1,
+      "OSDE": 1
+    },
+    "2026-05": {
+      "OSDE": 2,
+      "Banco BST": 1,
+      "Banco Entre Ríos": 1
+    },
+    "2026-06": {
+      "Banco BST": 2,
+      "Banco Piano": 5,
+      "OSDE": 3,
+      "Banco San Juan": 1
+    },
+    "2026-07": {
+      "Banco Macro": 4,
+      "Banco Piano": 4,
+      "OSDE": 12,
+      "Banco BST": 1,
+      "Banco Valores": 2,
+      "Banco BICE": 1
+    },
+    "2026-08": {
+      "Banco San Juan": 1,
+      "Banco Piano": 1
+    }
+  },
+  "por_tipo": {
+    "Incidente": 14,
+    "Requerimiento": 9,
+    "Problema": 8,
+    "Consulta": 5,
+    "Solicitud": 4,
+    "Tarea / Proceso": 3
+  },
+  "por_estado": {
+    "Cerrado": 29,
+    "En Curso": 5,
+    "Resuelto": 5,
+    "En Espera": 4
+  },
+  "tickets": [
+    {
+      "id": 1005401,
+      "cliente": "Banco San Juan",
+      "titulo": "Error time out bitacora automatica.",
+      "tipo": "Problema",
+      "autor": "jinostroza@bancosanjuan.com",
+      "prioridad": "Media",
+      "estado": "En Curso",
+      "creacion": "2026-08-04T17:44:04",
+      "mes": "2026-08"
+    },
+    {
+      "id": 1005347,
+      "cliente": "Banco Piano",
+      "titulo": "ERROR PUERTOS PROBATCH",
+      "tipo": "Incidente",
+      "autor": "Cabreras, Sebastian",
+      "prioridad": "Media",
+      "estado": "En Curso",
+      "creacion": "2026-08-03T16:18:25",
+      "mes": "2026-08"
+    },
+    {
+      "id": 1005317,
+      "cliente": "Banco Macro",
+      "titulo": "Error en generación de claves",
+      "tipo": "Incidente",
+      "autor": "Rapetti, Tomas Agustin",
+      "prioridad": "Media",
+      "estado": "En Espera",
+      "creacion": "2026-07-31T16:27:25",
+      "mes": "2026-07"
+    },
+    {
+      "id": 1005316,
+      "cliente": "Banco Macro",
+      "titulo": "Ejecutor: Comando no toma la actualización del estado real",
+      "tipo": "Requerimiento",
+      "autor": "Rapetti, Tomas Agustin",
+      "prioridad": "Media",
+      "estado": "En Espera",
+      "creacion": "2026-07-31T16:22:17",
+      "mes": "2026-07"
+    },
+    {
+      "id": 1005315,
+      "cliente": "Banco Macro",
+      "titulo": "Ajuste de timeout en agentes Java",
+      "tipo": "Incidente",
+      "autor": "Rapetti, Tomas Agustin",
+      "prioridad": "Media",
+      "estado": "En Curso",
+      "creacion": "2026-07-31T16:15:21",
+      "mes": "2026-07"
+    },
+    {
+      "id": 1005314,
+      "cliente": "Banco Macro",
+      "titulo": "Produccion/Variable fecha no la toma la liberacion",
+      "tipo": "Incidente",
+      "autor": "Rapetti, Tomas Agustin",
+      "prioridad": "Media",
+      "estado": "En Curso",
+      "creacion": "2026-07-31T16:06:31",
+      "mes": "2026-07"
+    },
+    {
+      "id": 1005284,
+      "cliente": "Banco Piano",
+      "titulo": "Error al ejecutar Update dentro de un comando",
+      "tipo": "Incidente",
+      "autor": "Cabreras, Sebastian",
+      "prioridad": "Media",
+      "estado": "Resuelto",
+      "creacion": "2026-07-30T17:02:40",
+      "mes": "2026-07"
+    },
+    {
+      "id": 1005275,
+      "cliente": "OSDE",
+      "titulo": "Relacionado con TKT 1004759 - No está bien creado el comando NOCFGC y falta agregar en la bitácora de los dias miércoles",
+      "tipo": "Solicitud",
+      "autor": "mteresa.grandville@rcpo.com.ar",
+      "prioridad": "Media",
+      "estado": "En Curso",
+      "creacion": "2026-07-30T13:36:40",
+      "mes": "2026-07"
+    },
+    {
+      "id": 1005226,
+      "cliente": "Banco Piano",
+      "titulo": "Puertos No visibles Probatch WEB",
+      "tipo": "Incidente",
+      "autor": "Cabreras, Sebastian",
+      "prioridad": "Media",
+      "estado": "Cerrado",
+      "creacion": "2026-07-29T09:21:27",
+      "mes": "2026-07"
+    },
+    {
+      "id": 1005193,
+      "cliente": "OSDE",
+      "titulo": "Servicio de Windows para arranque automático de Bitácoras \"ProbatchExecutorservice\"",
+      "tipo": "Consulta",
+      "autor": "mteresa.grandville@rcpo.com.ar",
+      "prioridad": "Media",
+      "estado": "Cerrado",
+      "creacion": "2026-07-28T09:51:28",
+      "mes": "2026-07"
+    },
+    {
+      "id": 1005137,
+      "cliente": "Banco Piano",
+      "titulo": "Filtros de Ejecutor",
+      "tipo": "Incidente",
+      "autor": "Cabreras, Sebastian",
+      "prioridad": "Media",
+      "estado": "Cerrado",
+      "creacion": "2026-07-24T14:39:39",
+      "mes": "2026-07"
+    },
+    {
+      "id": 1005119,
+      "cliente": "OSDE",
+      "titulo": "Relacionado con la creación de variante comando FPCOPARA Variante NOCFGC - TKT 1004759",
+      "tipo": "Requerimiento",
+      "autor": "mteresa.grandville@rcpo.com.ar",
+      "prioridad": "Media",
+      "estado": "Resuelto",
+      "creacion": "2026-07-24T11:01:22",
+      "mes": "2026-07"
+    },
+    {
+      "id": 1005109,
+      "cliente": "OSDE",
+      "titulo": "Bitácora en ambiente Producción SAP - \"SAP COPIA EJECUCIÓN DE VARIANTES\" del día 23-07 quedó en estado ejecutando con varios comandos sin correr.",
+      "tipo": "Consulta",
+      "autor": "mteresa.grandville@rcpo.com.ar",
+      "prioridad": "Media",
+      "estado": "Cerrado",
+      "creacion": "2026-07-23T19:08:54",
+      "mes": "2026-07"
+    },
+    {
+      "id": 1005091,
+      "cliente": "Banco BST",
+      "titulo": "Probatch Contingencia - Eliminar Feriado",
+      "tipo": "Solicitud",
+      "autor": "Pintos, Héctor",
+      "prioridad": "Media",
+      "estado": "Cerrado",
+      "creacion": "2026-07-23T11:57:35",
+      "mes": "2026-07"
+    },
+    {
+      "id": 1005047,
+      "cliente": "Banco Piano",
+      "titulo": "Ejecutor no pausa comando",
+      "tipo": "Incidente",
+      "autor": "Cabreras, Sebastian",
+      "prioridad": "Media",
+      "estado": "Resuelto",
+      "creacion": "2026-07-22T09:53:23",
+      "mes": "2026-07"
+    },
+    {
+      "id": 1005016,
+      "cliente": "OSDE",
+      "titulo": "Eliminar comandos en Bitácora AS/400 ambiente Web - Manual y Automática",
+      "tipo": "Requerimiento",
+      "autor": "mteresa.grandville@rcpo.com.ar",
+      "prioridad": "Media",
+      "estado": "Cerrado",
+      "creacion": "2026-07-21T11:04:31",
+      "mes": "2026-07"
+    },
+    {
+      "id": 1004972,
+      "cliente": "Banco Valores",
+      "titulo": "Fallo en el agente de linux",
+      "tipo": "Problema",
+      "autor": "Del Percio, Carlos",
+      "prioridad": "Media",
+      "estado": "En Espera",
+      "creacion": "2026-07-20T11:12:43",
+      "mes": "2026-07"
+    },
+    {
+      "id": 1004926,
+      "cliente": "OSDE",
+      "titulo": "proceso ACTARCCL en equipo S100A8FD queda colgado desde la 1:09",
+      "tipo": "Requerimiento",
+      "autor": "Ricardo Retamar",
+      "prioridad": "Media",
+      "estado": "Cerrado",
+      "creacion": "2026-07-17T06:15:22",
+      "mes": "2026-07"
+    },
+    {
+      "id": 1004873,
+      "cliente": "OSDE",
+      "titulo": "A partir de las 07:00 los procesos de la bitácora automática de AS/400 dejaron de ejecutar",
+      "tipo": "Problema",
+      "autor": "mteresa.grandville@rcpo.com.ar",
+      "prioridad": "Media",
+      "estado": "Resuelto",
+      "creacion": "2026-07-15T11:30:43",
+      "mes": "2026-07"
+    },
+    {
+      "id": 1004786,
+      "cliente": "OSDE",
+      "titulo": "No se puede re-ejecutar comandos con error.",
+      "tipo": "Problema",
+      "autor": "Walter santucho",
+      "prioridad": "Media",
+      "estado": "Resuelto",
+      "creacion": "2026-07-13T10:18:44",
+      "mes": "2026-07"
+    },
+    {
+      "id": 1004772,
+      "cliente": "Banco BICE",
+      "titulo": "Problema con funcionalidad de exportación/importación de Bitácoras",
+      "tipo": "Problema",
+      "autor": "Meza, Hernán",
+      "prioridad": "Alta",
+      "estado": "Cerrado",
+      "creacion": "2026-07-08T19:13:12",
+      "mes": "2026-07"
+    },
+    {
+      "id": 1004760,
+      "cliente": "OSDE",
+      "titulo": "En la versión Web de la bitácora SAP Equipo PWINZ1-976BE05 del día miércoles faltan agregar comandos",
+      "tipo": "Requerimiento",
+      "autor": "mteresa.grandville@rcpo.com.ar",
+      "prioridad": "Media",
+      "estado": "Cerrado",
+      "creacion": "2026-07-08T12:56:51",
+      "mes": "2026-07"
+    },
+    {
+      "id": 1004759,
+      "cliente": "OSDE",
+      "titulo": "Comando NOCFGC no está bien creado en bitácora WEB ambiente SAP",
+      "tipo": "Incidente",
+      "autor": "mteresa.grandville@rcpo.com.ar",
+      "prioridad": "Media",
+      "estado": "Cerrado",
+      "creacion": "2026-07-08T12:48:34",
+      "mes": "2026-07"
+    },
+    {
+      "id": 1004757,
+      "cliente": "OSDE",
+      "titulo": "Problemas para acceder al monitoreo de puertos desde la opción WEB de Probatch - Ambiente AS/400 y SAP",
+      "tipo": "Consulta",
+      "autor": "mteresa.grandville@rcpo.com.ar",
+      "prioridad": "Media",
+      "estado": "Cerrado",
+      "creacion": "2026-07-08T12:33:01",
+      "mes": "2026-07"
+    },
+    {
+      "id": 1004622,
+      "cliente": "Banco Valores",
+      "titulo": "Agente Probatch Para Servidores LINUX",
+      "tipo": "Requerimiento",
+      "autor": "Del Percio, Carlos",
+      "prioridad": "Media",
+      "estado": "Cerrado",
+      "creacion": "2026-07-02T12:34:17",
+      "mes": "2026-07"
+    },
+    {
+      "id": 1004582,
+      "cliente": "OSDE",
+      "titulo": "Error comando FPCOPARA/NOCFGC",
+      "tipo": "Problema",
+      "autor": "Walter santucho",
+      "prioridad": "Media",
+      "estado": "Cerrado",
+      "creacion": "2026-07-01T12:27:04",
+      "mes": "2026-07"
+    },
+    {
+      "id": 1004531,
+      "cliente": "Banco BST",
+      "titulo": "Configuracion Usuario Sybase",
+      "tipo": "Solicitud",
+      "autor": "Pintos, Héctor",
+      "prioridad": "Media",
+      "estado": "Cerrado",
+      "creacion": "2026-06-30T10:01:43",
+      "mes": "2026-06"
+    },
+    {
+      "id": 1004451,
+      "cliente": "Banco Piano",
+      "titulo": "Log Operaciones - No Muestra Observacion Operador",
+      "tipo": "Incidente",
+      "autor": "Cabreras, Sebastian",
+      "prioridad": "Media",
+      "estado": "Cerrado",
+      "creacion": "2026-06-26T10:07:42",
+      "mes": "2026-06"
+    },
+    {
+      "id": 1004439,
+      "cliente": "Banco Piano",
+      "titulo": "ERROR en REPROCESO DE COMANDOS QA",
+      "tipo": "Incidente",
+      "autor": "Cabreras, Sebastian",
+      "prioridad": "Media",
+      "estado": "Cerrado",
+      "creacion": "2026-06-25T13:36:53",
+      "mes": "2026-06"
+    },
+    {
+      "id": 1004416,
+      "cliente": "Banco Piano",
+      "titulo": "Filtros Ejecutor WEB",
+      "tipo": "Incidente",
+      "autor": "Cabreras, Sebastian",
+      "prioridad": "Media",
+      "estado": "Cerrado",
+      "creacion": "2026-06-24T18:41:14",
+      "mes": "2026-06"
+    },
+    {
+      "id": 1004364,
+      "cliente": "Banco Piano",
+      "titulo": "Log Operaciones - Proceso mas 24hs.",
+      "tipo": "Incidente",
+      "autor": "Cabreras, Sebastian",
+      "prioridad": "Media",
+      "estado": "Cerrado",
+      "creacion": "2026-06-23T15:14:06",
+      "mes": "2026-06"
+    },
+    {
+      "id": 1004320,
+      "cliente": "Banco Piano",
+      "titulo": "ERROR EN LOG DE OPERACIONES -PB WEB",
+      "tipo": "Incidente",
+      "autor": "Cabreras, Sebastian",
+      "prioridad": "Media",
+      "estado": "Cerrado",
+      "creacion": "2026-06-22T13:49:26",
+      "mes": "2026-06"
+    },
+    {
+      "id": 1004198,
+      "cliente": "Banco BST",
+      "titulo": "Configuracion Probatch de Contingencia",
+      "tipo": "Tarea / Proceso",
+      "autor": "Pintos, Héctor",
+      "prioridad": "Media",
+      "estado": "Cerrado",
+      "creacion": "2026-06-17T12:50:13",
+      "mes": "2026-06"
+    },
+    {
+      "id": 1003915,
+      "cliente": "OSDE",
+      "titulo": "Fallan los comandos en la Bitácora de SAP",
+      "tipo": "Requerimiento",
+      "autor": "mteresa.grandville@rcpo.com.ar",
+      "prioridad": "Media",
+      "estado": "Cerrado",
+      "creacion": "2026-06-07T16:03:26",
+      "mes": "2026-06"
+    },
+    {
+      "id": 1003911,
+      "cliente": "Banco San Juan",
+      "titulo": "Consulta comando bitacora automatica.",
+      "tipo": "Consulta",
+      "autor": "jinostroza@bancosanjuan.com",
+      "prioridad": "Media",
+      "estado": "Cerrado",
+      "creacion": "2026-06-05T17:07:47",
+      "mes": "2026-06"
+    },
+    {
+      "id": 1003832,
+      "cliente": "OSDE",
+      "titulo": "Ejecucion VB en ambiente de testing",
+      "tipo": "Tarea / Proceso",
+      "autor": "Walter santucho",
+      "prioridad": "Media",
+      "estado": "Cerrado",
+      "creacion": "2026-06-03T23:33:45",
+      "mes": "2026-06"
+    },
+    {
+      "id": 1003831,
+      "cliente": "OSDE",
+      "titulo": "Funcionalidad del Middleware",
+      "tipo": "Problema",
+      "autor": "Walter santucho",
+      "prioridad": "Alta",
+      "estado": "Cerrado",
+      "creacion": "2026-06-03T21:40:50",
+      "mes": "2026-06"
+    },
+    {
+      "id": 1003477,
+      "cliente": "OSDE",
+      "titulo": "Error en bitacora automatica de As400",
+      "tipo": "Problema",
+      "autor": "Walter santucho",
+      "prioridad": "Alta",
+      "estado": "Cerrado",
+      "creacion": "2026-05-26T07:52:00",
+      "mes": "2026-05"
+    },
+    {
+      "id": 1003472,
+      "cliente": "Banco BST",
+      "titulo": "Error con puertos",
+      "tipo": "Requerimiento",
+      "autor": "Rapetti, Tomas Agustin",
+      "prioridad": "Media",
+      "estado": "Cerrado",
+      "creacion": "2026-05-22T17:22:44",
+      "mes": "2026-05"
+    },
+    {
+      "id": 1003471,
+      "cliente": "Banco Entre Ríos",
+      "titulo": "Error de ejecución múltiple",
+      "tipo": "Requerimiento",
+      "autor": "Rapetti, Tomas Agustin",
+      "prioridad": "Media",
+      "estado": "Cerrado",
+      "creacion": "2026-05-22T17:17:16",
+      "mes": "2026-05"
+    },
+    {
+      "id": 1003356,
+      "cliente": "OSDE",
+      "titulo": "Revisión bitacora automatica y comando",
+      "tipo": "Tarea / Proceso",
+      "autor": "Walter santucho",
+      "prioridad": "Media",
+      "estado": "Cerrado",
+      "creacion": "2026-05-19T21:30:03",
+      "mes": "2026-05"
+    },
+    {
+      "id": 1001491,
+      "cliente": "Banco San Juan",
+      "titulo": "Consulta sobre cancelación de un comando ejecutado correctamente",
+      "tipo": "Consulta",
+      "autor": "Rapetti, Tomas Agustin",
+      "prioridad": "Media",
+      "estado": "Cerrado",
+      "creacion": "2026-03-03T17:52:32",
+      "mes": "2026-03"
+    },
+    {
+      "id": 1001454,
+      "cliente": "OSDE",
+      "titulo": "Unificar Servidor SAP & AS400",
+      "tipo": "Solicitud",
+      "autor": "Rapetti, Tomas Agustin",
+      "prioridad": "Media",
+      "estado": "En Espera",
+      "creacion": "2026-03-02T12:21:32",
+      "mes": "2026-03"
+    }
+  ]
+}

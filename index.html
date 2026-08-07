@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Helpdesk — Estadísticas de Tickets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; background: #f4f5f7; color: #1f2937; -webkit-font-smoothing: antialiased; }
+
+.topbar { background: linear-gradient(135deg,#0b2559,#123a82); color: #fff; padding: 22px 28px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; box-shadow: 0 2px 10px rgba(16,24,40,.15); }
+.topbar h1 { font-size: 20px; font-weight: 800; letter-spacing: -.3px; }
+.topbar .sub { font-size: 12px; opacity: .75; margin-top: 2px; }
+.topbar .spacer { flex: 1; }
+.topbar .updated { font-size: 11px; opacity: .7; text-align: right; }
+
+.controls { background: #fff; border-bottom: 1px solid #e8eaed; padding: 12px 28px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.controls label { font-size: 11px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+.controls select, .controls input[type=file] { border: 1px solid #e2e4e9; border-radius: 8px; padding: 7px 10px; font-size: 12px; font-family: inherit; background: #fff; }
+.controls .hint { font-size: 11px; color: #9ca3af; }
+.btn { padding: 7px 15px; border-radius: 8px; border: 1px solid #e2e4e9; background: white; cursor: pointer; font-size: 12px; font-weight: 600; color: #374151; }
+.btn:hover { background: #f6f7f9; }
+
+main { max-width: 1280px; margin: 0 auto; padding: 24px 28px 60px; }
+
+.kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin-bottom: 20px; }
+.kpi-card { background: #fff; border-radius: 14px; padding: 18px 20px; box-shadow: 0 1px 3px rgba(16,24,40,.06); border: 1px solid #eef0f3; }
+.kpi-card .icon { font-size: 20px; margin-bottom: 8px; }
+.kpi-card .label { font-size: 11px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 6px; }
+.kpi-card .value { font-size: 30px; font-weight: 800; color: #111827; line-height: 1; }
+.kpi-card .value.accent { color: #059669; }
+.kpi-card .foot { font-size: 11px; color: #9ca3af; margin-top: 6px; }
+
+.grid-2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; margin-bottom: 16px; }
+@media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+
+.panel { background: #fff; border-radius: 14px; box-shadow: 0 1px 3px rgba(16,24,40,.06); border: 1px solid #eef0f3; overflow: hidden; }
+.panel-head { background: #123a82; color: #fff; padding: 12px 18px; font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+.panel-body { padding: 20px; }
+
+.bars-month { display: flex; align-items: flex-end; gap: 14px; height: 220px; padding-top: 10px; }
+.bars-month .col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 6px; min-width: 0; }
+.bars-month .stack { width: 100%; max-width: 46px; display: flex; flex-direction: column-reverse; border-radius: 6px 6px 0 0; overflow: hidden; }
+.bars-month .seg { width: 100%; }
+.bars-month .val { font-size: 12px; font-weight: 700; color: #111827; }
+.bars-month .mlabel { font-size: 11px; color: #6b7280; font-weight: 600; text-align: center; }
+
+.hbar-row { display: grid; grid-template-columns: 120px 1fr 34px; align-items: center; gap: 10px; margin-bottom: 12px; }
+.hbar-row .name { font-size: 12px; font-weight: 600; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hbar-track { background: #f1f3f5; border-radius: 6px; height: 16px; overflow: hidden; }
+.hbar-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg,#2563eb,#60a5fa); }
+.hbar-row .num { font-size: 12px; font-weight: 700; color: #111827; text-align: right; }
+
+.legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 14px; font-size: 11px; color: #6b7280; }
+.legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+
+table.pivot { width: 100%; border-collapse: collapse; font-size: 12px; }
+table.pivot th, table.pivot td { padding: 8px 10px; text-align: right; border-bottom: 1px solid #f1f3f5; white-space: nowrap; }
+table.pivot th:first-child, table.pivot td:first-child { text-align: left; position: sticky; left: 0; background: #fff; }
+table.pivot thead th { background: #f8f9fb; color: #6b7280; font-weight: 700; font-size: 10.5px; text-transform: uppercase; letter-spacing: .3px; }
+table.pivot tbody tr:hover { background: #fafbfd; }
+table.pivot td.total, table.pivot th.total { font-weight: 800; color: #111827; background: #f8f9fb; }
+.table-wrap { overflow-x: auto; }
+
+.chip-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { padding: 5px 12px; border-radius: 999px; background: #eff6ff; color: #2563eb; font-size: 11.5px; font-weight: 700; border: 1px solid #dbeafe; }
+
+.empty { padding: 40px; text-align: center; color: #9ca3af; }
+.empty b { color: #374151; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <h1>📊 Soporte Técnico — Estadísticas de Tickets</h1>
+    <div class="sub">Bandeja de Equipo · Soluciones AST · <span id="clienteExcluidoLbl"></span></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="updated" id="updatedLbl"></div>
+</div>
+
+<div class="controls">
+  <label>Fuente</label>
+  <span class="hint" id="fuenteLbl">helpdesk_data.json</span>
+  <button class="btn" onclick="location.reload()">↻ Recargar</button>
+  <span class="hint">Actualizar: exportar Excel en la bandeja → <code>python3 helpdesk_stats.py</code> → recargar esta página</span>
+</div>
+
+<main id="app">
+  <div class="empty">Cargando…</div>
+</main>
+
+<script>
+async function cargar() {
+  const app = document.getElementById('app');
+  let data;
+  try {
+    const res = await fetch('helpdesk_data.json', { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    data = await res.json();
+  } catch (e) {
+    app.innerHTML = `<div class="empty">
+      <b>No pude cargar helpdesk_data.json</b><br><br>
+      Corré primero: <code>python3 helpdesk_stats.py</code><br>
+      y serví esta carpeta con: <code>python3 -m http.server 8080</code><br><br>
+      (${e.message})
+    </div>`;
+    return;
+  }
+  render(data);
+}
+
+function render(data) {
+  document.getElementById('clienteExcluidoLbl').textContent = data.cliente_excluido
+    ? `(excluye cliente "${data.cliente_excluido}")` : '';
+  document.getElementById('updatedLbl').innerHTML =
+    `Generado: ${new Date(data.generado).toLocaleString('es-AR')}<br>${data.total_tickets} tickets analizados`;
+
+  const meses = data.meses;
+  const clientes = data.clientes;
+  const totalMes = meses.length ? meses[meses.length - 1] : null;
+  const mesAnterior = meses.length > 1 ? meses[meses.length - 2] : null;
+  const topCliente = clientes[0];
+  const promedioMensual = meses.length ? (data.total_tickets / meses.length) : 0;
+
+  const PALETA = ['#2563eb','#059669','#d97706','#dc2626','#7c3aed','#0891b2','#db2777','#65a30d','#9333ea'];
+  const colorCliente = {};
+  clientes.forEach((c, i) => colorCliente[c.nombre] = PALETA[i % PALETA.length]);
+
+  const maxMes = Math.max(1, ...meses.map(m => m.total));
+  const maxCliente = Math.max(1, ...clientes.map(c => c.total));
+
+  const kpis = `
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="icon">🎫</div>
+        <div class="label">Total tickets</div>
+        <div class="value">${data.total_tickets}</div>
+        <div class="foot">en el período analizado</div>
+      </div>
+      <div class="kpi-card">
+        <div class="icon">📅</div>
+        <div class="label">${totalMes ? totalMes.etiqueta : '—'}</div>
+        <div class="value accent">${totalMes ? totalMes.total : 0}</div>
+        <div class="foot">${mesAnterior ? (totalMes.total - mesAnterior.total >= 0 ? '▲ +' : '▼ ') + (totalMes.total - mesAnterior.total) + ' vs ' + mesAnterior.etiqueta : 'último mes con datos'}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="icon">🏢</div>
+        <div class="label">Cliente con más casos</div>
+        <div class="value">${topCliente ? topCliente.total : 0}</div>
+        <div class="foot">${topCliente ? topCliente.nombre : '—'}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="icon">📈</div>
+        <div class="label">Promedio mensual</div>
+        <div class="value">${promedioMensual.toFixed(1)}</div>
+        <div class="foot">tickets / mes</div>
+      </div>
+    </div>
+  `;
+
+  const barsMonth = meses.map(m => {
+    const porCliente = data.por_mes_cliente[m.clave] || {};
+    const segs = Object.entries(porCliente)
+      .sort((a,b) => b[1]-a[1])
+      .map(([cli, val]) => {
+        const h = (val / maxMes) * 180;
+        return `<div class="seg" style="height:${h}px;background:${colorCliente[cli] || '#94a3b8'}" title="${cli}: ${val}"></div>`;
+      }).join('');
+    return `<div class="col">
+      <div class="val">${m.total}</div>
+      <div class="stack">${segs}</div>
+      <div class="mlabel">${m.etiqueta.split(' ')[0].slice(0,3)}<br>${m.etiqueta.split(' ')[1]}</div>
+    </div>`;
+  }).join('');
+
+  const legend = clientes.map(c =>
+    `<span><span class="sw" style="background:${colorCliente[c.nombre]}"></span>${c.nombre}</span>`
+  ).join('');
+
+  const hbars = clientes.map(c => `
+    <div class="hbar-row">
+      <div class="name" title="${c.nombre}">${c.nombre}</div>
+      <div class="hbar-track"><div class="hbar-fill" style="width:${(c.total/maxCliente*100).toFixed(1)}%; background:${colorCliente[c.nombre]}"></div></div>
+      <div class="num">${c.total}</div>
+    </div>`).join('');
+
+  const tipoChips = Object.entries(data.por_tipo).map(([tipo, n]) =>
+    `<span class="chip">${tipo}: ${n}</span>`).join('');
+  const estadoChips = Object.entries(data.por_estado).map(([estado, n]) =>
+    `<span class="chip" style="background:#f0fdf4;color:#059669;border-color:#dcfce7">${estado}: ${n}</span>`).join('');
+
+  const pivotHead = `<th>Cliente</th>` + meses.map(m => `<th>${m.etiqueta}</th>`).join('') + `<th class="total">Total</th>`;
+  const pivotRows = clientes.map(c => {
+    const cells = meses.map(m => {
+      const v = (data.por_mes_cliente[m.clave] || {})[c.nombre] || 0;
+      return `<td>${v || '—'}</td>`;
+    }).join('');
+    return `<tr><td>${c.nombre}</td>${cells}<td class="total">${c.total}</td></tr>`;
+  }).join('');
+  const pivotTotalRow = `<tr><td class="total">Total</td>` +
+    meses.map(m => `<td class="total">${m.total}</td>`).join('') +
+    `<td class="total">${data.total_tickets}</td></tr>`;
+
+  document.getElementById('app').innerHTML = `
+    ${kpis}
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-head">📈 Casos creados por mes (por cliente)</div>
+        <div class="panel-body">
+          <div class="bars-month">${barsMonth || '<div class="empty">Sin datos</div>'}</div>
+          <div class="legend">${legend}</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">🏢 Casos por cliente (total del período)</div>
+        <div class="panel-body">${hbars || '<div class="empty">Sin datos</div>'}</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-head">🗂️ Distribución por tipo</div>
+        <div class="panel-body"><div class="chip-row">${tipoChips}</div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">🚦 Distribución por estado</div>
+        <div class="panel-body"><div class="chip-row">${estadoChips}</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">📋 Detalle: ingresos por mes y cliente</div>
+      <div class="panel-body table-wrap">
+        <table class="pivot">
+          <thead><tr>${pivotHead}</tr></thead>
+          <tbody>${pivotRows}${pivotTotalRow}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+cargar();
+</script>
+</body>
+</html>
